@@ -41,21 +41,19 @@
 -export([deferred_log/3]).
 
 -record(state, {
-                level           :: integer()
+                identity        :: string()
+                ,level          :: integer()
                 ,retry_interval :: integer()
                 ,retry_times    :: integer()
-                ,loggly_url     :: binary()
+                ,loggly_url     :: string()
                }).
 
 -include_lib("lager/include/lager.hrl").
 
-init([Level, RetryTimes, RetryInterval, LogglyUrl]) ->
-    application:start(inets),
-    application:start(crypto),
-    application:start(public_key),
-    application:start(ssl),
+init([Identity, Level, RetryTimes, RetryInterval, LogglyUrl]) ->
     State = #state{
-                   level           = lager_util:level_to_num(Level)
+                   identity        = Identity
+                   ,level          = lager_util:level_to_num(Level)
                    ,retry_interval = RetryInterval
                    ,retry_times    = RetryTimes
                    ,loggly_url     = LogglyUrl
@@ -72,7 +70,8 @@ handle_call(_Request, State) ->
 %% @private
 handle_event({log, Level, {_Date, _Time}, [_LevStr, Loc, Message]}, State) ->
     Payload = jsx:to_json([
-                            {<<"level">>, convert_level(Level)}
+                            {<<"identity">>, State#state.identity}
+                            ,{<<"level">>, convert_level(Level)}
                             ,{<<"location">>, list_to_binary(Loc)}
                             ,{<<"message">>, list_to_binary(Message)}
                           ]),

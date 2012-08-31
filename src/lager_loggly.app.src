@@ -30,8 +30,12 @@
   {vsn, git},
   {modules, []},
   {applications, [
-                  kernel,
-                  stdlib
+                  kernel
+                  ,stdlib
+                  ,crypto
+                  ,public_key
+                  ,ssl
+                  ,inets
                  ]},
   {registered, []}
  ]}.
