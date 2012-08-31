@@ -68,7 +68,8 @@ handle_call(_Request, State) ->
     {ok, ok, State}.
 
 %% @private
-handle_event({log, Level, {_Date, _Time}, [_LevStr, Loc, Message]}, State) ->
+handle_event({log, Level, {_Date, _Time}, [LogLevel, Loc, Message]}, State)
+        when Level =< LogLevel ->
     Payload = jsx:to_json([
                             {<<"identity">>, State#state.identity}
                             ,{<<"level">>, convert_level(Level)}
