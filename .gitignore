@@ -1,6 +1,0 @@
-.eunit
-deps
-priv
-*.o
-*.beam
-*.plt
