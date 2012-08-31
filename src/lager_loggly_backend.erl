@@ -71,10 +71,10 @@ handle_call(_Request, State) ->
 handle_event({log, Level, {_Date, _Time}, [_LvlStr, Loc, Message]}, State)
         when Level =< State#state.level ->
     Payload = jsx:to_json([
-                            {<<"identity">>, State#state.identity}
+                            {<<"identity">>, any_to_binary(State#state.identity)}
                             ,{<<"level">>, convert_level(Level)}
-                            ,{<<"location">>, list_to_binary(Loc)}
-                            ,{<<"message">>, list_to_binary(Message)}
+                            ,{<<"location">>, any_to_binary(Loc)}
+                            ,{<<"message">>, any_to_binary(Message)}
                           ]),
     Request = {State#state.loggly_url, [], "application/json", Payload},
     RetryTimes = State#state.retry_times,
@@ -111,4 +111,8 @@ deferred_log(Request, Retries, Interval) ->
     end.
 
 convert_level(Level) ->
-    list_to_binary(atom_to_list(lager_util:num_to_level(Level))).
+    any_to_binary(lager_util:num_to_level(Level)).
+
+any_to_binary(V) when is_atom(V)   -> any_to_binary(atom_to_list(V));
+any_to_binary(V) when is_list(V)   -> list_to_binary(V);
+any_to_binary(V) when is_binary(V) -> V.
