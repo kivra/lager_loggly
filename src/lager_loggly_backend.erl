@@ -80,8 +80,8 @@ handle_event({log, Level, {_Date, _Time}, [_LvlStr, Loc, Message]}, State)
     RetryTimes = State#state.retry_times,
     RetryInterval = State#state.retry_interval,
 
-    %% Spawn a background process to handle sending the email.
-    %% It will recurse until the message is successfully sent.
+    %% Spawn a background process to handle sending the payload.
+    %% It will recurse until the payload has ben successfully sent.
     spawn(?MODULE, deferred_log, [Request, RetryTimes, RetryInterval]),
     {ok, State};
 handle_event(_Event, State) ->
