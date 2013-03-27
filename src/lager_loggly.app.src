@@ -27,7 +27,7 @@
 {application, lager_loggly,
  [
   {description, "Loggly backend for Lager"},
-  {vsn, git},
+  {vsn, "0.1.0"},
   {modules, []},
   {applications, [
                   kernel
