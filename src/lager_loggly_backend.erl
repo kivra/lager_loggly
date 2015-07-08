@@ -51,39 +51,53 @@
 -include_lib("lager/include/lager.hrl").
 
 init([Identity, Level, RetryTimes, RetryInterval, LogglyUrl]) ->
-    State = #state{
-                   identity        = Identity
-                   ,level          = lager_util:level_to_num(Level)
-                   ,retry_interval = RetryInterval
-                   ,retry_times    = RetryTimes
-                   ,loggly_url     = LogglyUrl
-                  },
-    {ok, State}.
-
+    try lager_util:config_to_mask(Level) of
+        Levels ->
+            State = #state{
+                           level          = Levels
+                           ,identity       = Identity
+                           ,retry_interval = RetryInterval
+                           ,retry_times    = RetryTimes
+                           ,loggly_url     = LogglyUrl
+                          },
+            {ok, State}
+    catch
+        _:_ ->
+            {error, {fatal, bad_log_level}}
+    end.
 handle_call(get_loglevel, #state{ level = Level } = State) ->
     {ok, Level, State};
 handle_call({set_loglevel, Level}, State) ->
-    {ok, ok, State#state{ level = lager_util:level_to_num(Level) }};
+    try lager_util:config_to_mask(Level) of
+     Levels ->
+         {ok, ok, State#state{level=Levels}}
+ catch
+     _:_ ->
+         {ok, {error, bad_log_level}, State}
+ end;
 handle_call(_Request, State) ->
     {ok, ok, State}.
 
 %% @private
-handle_event({log, Level, {_Date, _Time}, [_LvlStr, Loc, Message]}, State)
-        when Level =< State#state.level ->
-    Payload = jsx:to_json([
-                            {<<"identity">>, any_to_binary(State#state.identity)}
-                            ,{<<"level">>, convert_level(Level)}
-                            ,{<<"location">>, any_to_binary(Loc)}
-                            ,{<<"message">>, any_to_binary(Message)}
-                          ]),
-    Request = {State#state.loggly_url, [], "application/json", Payload},
-    RetryTimes = State#state.retry_times,
-    RetryInterval = State#state.retry_interval,
+handle_event({log, Message}, #state{level = Level} = State) ->
+    case lager_util:is_loggable(Message, Level, ?MODULE) of
+        true ->
+            case lager_msg:message(Message) of
+                Payload when is_binary(Payload) ->
+                    Request = {State#state.loggly_url, [{"te", "chunked"}], "application/x-www-form-urlencoded", Payload},
+                    RetryTimes = State#state.retry_times,
+                    RetryInterval = State#state.retry_interval,
 
-    %% Spawn a background process to handle sending the payload.
-    %% It will recurse until the payload has ben successfully sent.
-    spawn(?MODULE, deferred_log, [Request, RetryTimes, RetryInterval]),
-    {ok, State};
+                    %% Spawn a background process to handle sending the payload.
+                    %% It will recurse until the payload has ben successfully sent.
+                    spawn(?MODULE, deferred_log, [Request, RetryTimes, RetryInterval]),
+                    {ok, State};
+                _ ->
+                    {ok, State}
+            end;
+        false ->
+            {ok, State}
+    end;
 handle_event(_Event, State) ->
     {ok, State}.
 
@@ -109,10 +123,3 @@ deferred_log(Request, Retries, Interval) ->
             timer:sleep(Interval * 1000),
             deferred_log(Request, Retries - 1, Interval)
     end.
-
-convert_level(Level) ->
-    any_to_binary(lager_util:num_to_level(Level)).
-
-any_to_binary(V) when is_atom(V)   -> any_to_binary(atom_to_list(V));
-any_to_binary(V) when is_list(V)   -> list_to_binary(V);
-any_to_binary(V) when is_binary(V) -> V.
