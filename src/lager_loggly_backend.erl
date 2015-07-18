@@ -44,8 +44,7 @@
 -export([deferred_log/3]).
 
 -record(state, {
-                 identity        :: string()
-                ,level          :: integer()
+                 level          :: integer()
                 ,retry_interval :: integer()
                 ,retry_times    :: integer()
                 ,loggly_url     :: string()
@@ -53,10 +52,9 @@
 
 -include_lib("lager/include/lager.hrl").
 
-init([Identity, Level, RetryTimes, RetryInterval, LogglyUrl]) ->
+init([Level, RetryTimes, RetryInterval, LogglyUrl]) ->
     State = #state{
-                    identity       = Identity
-                   ,level          = lager_util:level_to_num(Level)
+                    level          = lager_util:level_to_num(Level)
                    ,retry_interval = RetryInterval
                    ,retry_times    = RetryTimes
                    ,loggly_url     = LogglyUrl
@@ -75,11 +73,10 @@ handle_event({log, Message}, #state{level=Level} = State) ->
     case lager_util:is_loggable(Message, Level, ?MODULE) of
         true ->
             Payload = jsx:encode(cons_metadata_to_binary_proplist(lager_msg:metadata(Message), [
-                                         {<<"identity">>, any_to_binary(State#state.identity)}
-                                        ,{<<"level">>, convert_level(Level)}
+                                         {<<"level">>, convert_level(Level)}
                                         ,{<<"message">>, any_to_binary(lager_msg:message(Message))}
                                  ])),
-            Request = {State#state.loggly_url, [], "application/json", Payload},
+            Request = {State#state.loggly_url, [{"te", "chunked"}], "application/json", Payload},
             RetryTimes = State#state.retry_times,
             RetryInterval = State#state.retry_interval,
 
