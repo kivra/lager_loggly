@@ -73,8 +73,8 @@ handle_event({log, Message}, #state{level=Level} = State) ->
     case lager_util:is_loggable(Message, Level, ?MODULE) of
         true ->
             Payload = jsx:encode(cons_metadata_to_binary_proplist(lager_msg:metadata(Message), [
-                                         {<<"level">>, convert_level(Level)}
-                                        ,{<<"message">>, any_to_binary(lager_msg:message(Message))}
+                                     {<<"level">>, any_to_binary(lager_msg:severity(Message))}
+                                    ,{<<"message">>, any_to_binary(lager_msg:message(Message))}
                                  ])),
             Request = {State#state.loggly_url, [{"te", "chunked"}], "application/json", Payload},
             RetryTimes = State#state.retry_times,
@@ -114,9 +114,6 @@ deferred_log(Request, Retries, Interval) ->
 -spec cons_metadata_to_binary_proplist(Metadata::lager_msg_metadata(), Proplist::binary_proplist()) -> Proplist::binary_proplist().
 cons_metadata_to_binary_proplist(Metadata, Proplist) ->
     lists:foldl(fun({Key, Value}, Acc) -> [{any_to_binary(Key), any_to_binary(Value)} | Acc] end, Proplist, Metadata).
-
-convert_level(Level) ->
-    any_to_binary(lager_util:num_to_level(Level)).
 
 any_to_binary(V) when is_atom(V)    -> any_to_binary(atom_to_list(V));
 any_to_binary(V) when is_pid(V)     -> any_to_binary(pid_to_list(V));
