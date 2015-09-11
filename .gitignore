@@ -1,0 +1,14 @@
+ebin/*
+*.beam
+deps/*
+deps.plt
+.eunit
+.idea
+*.iml
+*.dump
+log
+doc
+dump.rdb
+.rebar
+_rel
+relx
