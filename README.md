@@ -1,4 +1,4 @@
-Overview
+[![Hex.pm](https://img.shields.io/hexpm/v/lager_loggly.svg?maxAge=2592000)](https://hex.pm/packages/lager_loggly) Overview
 ============
 
 This is a Loggly backend for lager which lets you send lager logs to your Loggly account.
