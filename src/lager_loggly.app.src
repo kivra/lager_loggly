@@ -37,5 +37,8 @@
                   ,ssl
                   ,inets
                  ]},
-  {registered, []}
+  {registered, []},
+  {maintainers, ["kivra"]},
+  {licenses, ["MIT"]},
+  {links, [{"GitHub", "https://github.com/kivra/lager_loggly"}]}
  ]}.
