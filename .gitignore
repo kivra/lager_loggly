@@ -12,3 +12,4 @@ dump.rdb
 .rebar
 _rel
 relx
+_build
